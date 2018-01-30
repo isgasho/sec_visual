@@ -5,7 +5,7 @@
   "scripts": {
     "build": "tsc",
     "lint": "tslint -c tslint.json -p tsconfig.json",
-    "start": "npm run build && electron ./dist/ts/main.js"
+    "start": "npm run build && electron ./dist/main.js"
   },
   "repository": "https://github.com/syssecfsu/sec_visual",
   "keywords": [
