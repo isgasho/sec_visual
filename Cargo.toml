@@ -1,0 +1,8 @@
+[package]
+name = "sec_visual"
+version = "0.1.0"
+authors = ["Zhi Wang <zwang@cs.fsu.edu>"]
+
+[dependencies]
+conrod = {version = "0.57.0", features = ["glium", "winit"]}
+rand = "0.4.2"
