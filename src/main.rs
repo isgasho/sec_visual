@@ -1,15 +1,18 @@
 #[macro_use] extern crate conrod;
-mod support;
+mod gui;
 
 fn main() {
     feature::main();
 }
 
+
 mod feature {
     use conrod;
     use conrod::backend::glium::glium;
+    use conrod::Labelable;
+    use conrod::Borderable;
     use conrod::backend::glium::glium::Surface;
-    use support;
+    use gui;
 
     struct Fonts {
         regular: conrod::text::font::Id,
@@ -24,7 +27,7 @@ mod feature {
         // Build the window.
         let mut events_loop = glium::glutin::EventsLoop::new();
         let window = glium::glutin::WindowBuilder::new()
-            .with_title("Text Demo")
+            .with_title("Software Vulnerability and Exploit Visualization")
             .with_dimensions(WIDTH, HEIGHT);
         let context = glium::glutin::ContextBuilder::new()
             .with_vsync(true)
@@ -61,8 +64,9 @@ mod feature {
         // The image map describing each of our widget->image mappings (in our case, none).
         let image_map = conrod::image::Map::<glium::texture::Texture2d>::new();
 
+        
         // Poll events from the window.
-        let mut event_loop = support::EventLoop::new();
+        let mut event_loop = gui::EventLoop::new();
         'main: loop {
 
             // Handle all events.
@@ -107,12 +111,19 @@ mod feature {
     widget_ids!{
         struct Ids {
             master,
+            header, 
+            body, 
+            footer,
             left_col,
             middle_col,
             right_col,
             left_text,
             middle_text,
             right_text,
+            float_reg,
+            text_reg,
+            btn_next,
+            btn_run,
         }
     }
 
@@ -120,11 +131,36 @@ mod feature {
         use conrod::{color, widget, Colorable, Positionable, Scalar, Sizeable, Widget};
 
         // Our `Canvas` tree, upon which we will place our text widgets.
-        widget::Canvas::new().flow_right(&[
-            (ids.left_col, widget::Canvas::new().color(color::BLACK)),
-            (ids.middle_col, widget::Canvas::new().color(color::DARK_CHARCOAL)),
-            (ids.right_col, widget::Canvas::new().color(color::CHARCOAL)),
+        widget::Canvas::new().flow_down(&[
+            (ids.header, widget::Canvas::new().length(40.0).color(color::LIGHT_BLUE)),
+            (ids.body, widget::Canvas::new().flow_right(&[
+                (ids.left_col, widget::Canvas::new().color(color::BLACK)),
+                (ids.middle_col, widget::Canvas::new().color(color::DARK_CHARCOAL)),
+                (ids.right_col, widget::Canvas::new().color(color::CHARCOAL)),
+            ])),
         ]).set(ids.master, ui);
+
+
+        // Creat buttons to control the execution
+        let btn = widget::Button::new().color(color::LIGHT_GREY).w_h(50.0, 36.0);
+        let btn_next = btn.clone().label("Next").middle_of(ids.header);
+        let btn_run = btn.label("Run").right_from(ids.btn_next, 10.0);        
+
+        for _click in btn_next.set(ids.btn_next, ui) {
+            println!("Next instruction");
+        }
+
+        for _click in btn_run.set(ids.btn_run, ui) {
+            println!("Run until end");
+        }
+        
+        // Creat a floating window for registers
+        widget::Canvas::new().floating(true).w_h(200.0, 400.0).border_color(color::BLUE).
+            label_color(color::BLACK).middle_of(ids.right_col).
+            title_bar("Registers").color(color::WHITE).set(ids.float_reg,ui);
+
+        widget::Text::new("Hello, registers").color(color::WHITE).font_size(18).
+            middle_of(ids.float_reg).set(ids.text_reg, ui);
 
         const DEMO_TEXT: &'static str = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. \
             Mauris aliquet porttitor tellus vel euismod. Integer lobortis volutpat bibendum. Nulla \
