@@ -10,19 +10,17 @@ mod feature {
     use conrod;
     use conrod::backend::glium::glium;
     use conrod::Labelable;
-    use conrod::Borderable;
     use conrod::backend::glium::glium::Surface;
     use gui;
 
     struct Fonts {
         regular: conrod::text::font::Id,
-        italic: conrod::text::font::Id,
-        bold: conrod::text::font::Id,
+        mono: conrod::text::font::Id,
     }
 
     pub fn main() {
-        const WIDTH: u32 = 1080;
-        const HEIGHT: u32 = 720;
+        const WIDTH: u32 = 1280;
+        const HEIGHT: u32 = 800;
 
         // Build the window.
         let mut events_loop = glium::glutin::EventsLoop::new();
@@ -47,8 +45,7 @@ mod feature {
         // Store our `font::Id`s in a struct for easy access in the `set_ui` function.
         let fonts = Fonts {
             regular: ui.fonts.insert_from_file(format!("{}{}", noto_sans, "NotoSans-Regular.ttf")).unwrap(),
-            italic: ui.fonts.insert_from_file(format!("{}{}", noto_sans, "NotoSans-Italic.ttf")).unwrap(),
-            bold: ui.fonts.insert_from_file(format!("{}{}", noto_sans, "NotoSans-Bold.ttf")).unwrap(),
+            mono: ui.fonts.insert_from_file(format!("{}{}", noto_sans, "NotoSans-Italic.ttf")).unwrap(),
         };
 
         // Specify the default font to use when none is specified by the widget.
@@ -114,9 +111,14 @@ mod feature {
             header, 
             body, 
             footer,
-            left_col,
-            middle_col,
-            right_col,
+            col_code,
+            col_mem,
+            col_stack,
+            col_reg,
+            label_code,
+            label_stack,
+            label_mem,
+            label_reg,
             left_text,
             middle_text,
             right_text,
@@ -127,16 +129,17 @@ mod feature {
         }
     }
 
-    fn set_ui(ref mut ui: conrod::UiCell, ids: &Ids, fonts: &Fonts) {
-        use conrod::{color, widget, Colorable, Positionable, Scalar, Sizeable, Widget};
+    fn set_ui(ref mut ui: conrod::UiCell, ids: &Ids, _fonts: &Fonts) {
+        use conrod::{color, widget, Colorable, Positionable, Sizeable, Widget};
 
         // Our `Canvas` tree, upon which we will place our text widgets.
         widget::Canvas::new().flow_down(&[
-            (ids.header, widget::Canvas::new().length(40.0).color(color::LIGHT_BLUE)),
+            (ids.header, widget::Canvas::new().length(50.0).color(color::LIGHT_BLUE)),
             (ids.body, widget::Canvas::new().flow_right(&[
-                (ids.left_col, widget::Canvas::new().color(color::BLACK)),
-                (ids.middle_col, widget::Canvas::new().color(color::DARK_CHARCOAL)),
-                (ids.right_col, widget::Canvas::new().color(color::CHARCOAL)),
+                (ids.col_code, widget::Canvas::new().length_weight(52.0).color(color::LIGHT_CHARCOAL)),
+                (ids.col_mem, widget::Canvas::new().length_weight(16.0).color(color::WHITE)),
+                (ids.col_stack, widget::Canvas::new().length_weight(16.0).color(color::WHITE)),
+                (ids.col_reg, widget::Canvas::new().length_weight(16.0).color(color::WHITE)),
             ])),
         ]).set(ids.master, ui);
 
@@ -154,49 +157,25 @@ mod feature {
             println!("Run until end");
         }
         
-        // Creat a floating window for registers
-        widget::Canvas::new().floating(true).w_h(200.0, 400.0).border_color(color::BLUE).
-            label_color(color::BLACK).middle_of(ids.right_col).
-            title_bar("Registers").color(color::WHITE).set(ids.float_reg,ui);
+        fn title (tb: widget::TextBox, parent_id: widget::Id) -> widget::TextBox { 
+            tb.color(color::DARK_BLUE).center_justify().text_color(color::WHITE).
+                font_size(20).w_of(parent_id).mid_top_of(parent_id)
+        };
 
-        widget::Text::new("Hello, registers").color(color::WHITE).font_size(18).
-            middle_of(ids.float_reg).set(ids.text_reg, ui);
+        title(widget::TextBox::new("Code"), ids.col_code).set(ids.label_code, ui);
+        title(widget::TextBox::new("Stack"), ids.col_stack).set(ids.label_stack, ui);
+        title(widget::TextBox::new("Mem"), ids.col_mem).set(ids.label_mem, ui);
+        title(widget::TextBox::new("Registers"), ids.col_reg).set(ids.label_reg, ui);
 
-        const DEMO_TEXT: &'static str = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. \
-            Mauris aliquet porttitor tellus vel euismod. Integer lobortis volutpat bibendum. Nulla \
-            finibus odio nec elit condimentum, rhoncus fermentum purus lacinia. Interdum et malesuada \
-            fames ac ante ipsum primis in faucibus. Cras rhoncus nisi nec dolor bibendum pellentesque. \
-            Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. \
-            Quisque commodo nibh hendrerit nunc sollicitudin sodales. Cras vitae tempus ipsum. Nam \
-            magna est, efficitur suscipit dolor eu, consectetur consectetur urna.";
-
-        const PAD: Scalar = 20.0;
-
-        widget::Text::new(DEMO_TEXT)
-            .font_id(fonts.regular)
-            .color(color::LIGHT_RED)
-            .padded_w_of(ids.left_col, PAD)
-            .mid_top_with_margin_on(ids.left_col, PAD)
-            .left_justify()
-            .line_spacing(10.0)
-            .set(ids.left_text, ui);
-
-        widget::Text::new(DEMO_TEXT)
-            .font_id(fonts.italic)
-            .color(color::LIGHT_GREEN)
-            .padded_w_of(ids.middle_col, PAD)
-            .middle_of(ids.middle_col)
-            .center_justify()
-            .line_spacing(2.5)
-            .set(ids.middle_text, ui);
-
-        widget::Text::new(DEMO_TEXT)
-            .font_id(fonts.bold)
-            .color(color::LIGHT_BLUE)
-            .padded_w_of(ids.right_col, PAD)
-            .mid_bottom_with_margin_on(ids.right_col, PAD)
-            .right_justify()
-            .line_spacing(5.0)
-            .set(ids.right_text, ui);
+        let _code_lines = [
+            "if let Some(primitives) = ui.draw_if_changed() {".to_string(),
+            "    renderer.fill(&display, primitives, &image_map);".to_string(),
+            "    let mut target = display.draw();".to_string(),
+            "    target.clear_color(0.0, 0.0, 0.0, 1.0);".to_string(),
+            "    renderer.draw(&display, &mut target, &image_map).unwrap();".to_string(),
+            "    target.finish().unwrap();".to_string(),
+            "}".to_string(),
+        ];
     }
+
 }
