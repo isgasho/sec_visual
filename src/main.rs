@@ -10,6 +10,7 @@ mod feature {
     use conrod;
     use conrod::backend::glium::glium;
     use conrod::Labelable;
+    use conrod::Borderable;
     use conrod::backend::glium::glium::Surface;
     use gui;
 
@@ -131,11 +132,10 @@ mod feature {
             label_mem,
             label_reg,
             list_code,
-            left_text,
-            middle_text,
-            right_text,
-            float_reg,
-            text_reg,
+            list_mem,
+            list_stack,
+            list_reg,
+            text_explain,
             btn_next,
             btn_run,
         }
@@ -267,6 +267,52 @@ mod feature {
                 widget::Text::new(&code_lines[i])
                     .font_id(fonts.mono)
                     .font_size(16)
+                    .color(color::WHITE),
+                ui,
+            );
+        }
+
+        if let Some(sbar) = scrollbar {
+            sbar.set(ui);
+        }
+
+        let (mut items, scrollbar) = widget::List::flow_down(512)
+            .scrollbar_on_top()
+            .item_size(20.0)
+            .middle_of(ids.col_mem_main)
+            .padded_wh_of(ids.col_mem_main, 10.0)
+            .set(ids.list_mem, ui);
+
+        while let Some(item) = items.next(ui) {
+            let i = item.i;
+            item.set(
+                widget::TextBox::new(&format!("{:<6} 0000_0000", i))
+                    .font_id(fonts.mono)
+                    .font_size(16)
+                    .border(0.0)
+                    .color(color::WHITE),
+                ui,
+            );
+        }
+
+        if let Some(sbar) = scrollbar {
+            sbar.set(ui);
+        }
+
+        let (mut items, scrollbar) = widget::List::flow_down(512)
+            .scrollbar_on_top()
+            .item_size(20.0)
+            .middle_of(ids.col_stack_main)
+            .padded_wh_of(ids.col_stack_main, 10.0)
+            .set(ids.list_stack, ui);
+
+        while let Some(item) = items.next(ui) {
+            let i = item.i;
+            item.set(
+                widget::TextBox::new(&format!("{:<6} 0000_0000", i))
+                    .font_id(fonts.mono)
+                    .font_size(16)
+                    .border(0.0)
                     .color(color::WHITE),
                 ui,
             );
