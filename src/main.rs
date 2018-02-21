@@ -39,15 +39,15 @@ mod feature {
         let ids = Ids::new(ui.widget_id_generator());
 
         // Add a `Font` to the `Ui`'s `font::Map` from file.
-        let noto_sans: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/assets/fonts/NotoSans/");
+        let fonts_path: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/assets/fonts/");
 
         // Store our `font::Id`s in a struct for easy access in the `set_ui` function.
         let fonts = Fonts {
             regular: ui.fonts
-                .insert_from_file(format!("{}{}", noto_sans, "NotoSans-Regular.ttf"))
+                .insert_from_file(format!("{}{}", fonts_path, "NotoSans-Regular.ttf"))
                 .unwrap(),
             mono: ui.fonts
-                .insert_from_file(format!("{}{}", noto_sans, "NotoSans-Italic.ttf"))
+                .insert_from_file(format!("{}{}", fonts_path, "Inconsolata-Regular.ttf"))
                 .unwrap(),
         };
 
@@ -141,7 +141,7 @@ mod feature {
         }
     }
 
-    fn set_ui(ref mut ui: conrod::UiCell, ids: &Ids, _fonts: &Fonts) {
+    fn set_ui(ref mut ui: conrod::UiCell, ids: &Ids, fonts: &Fonts) {
         use conrod::{color, widget, Colorable, Positionable, Sizeable, Widget};
 
         // Our `Canvas` tree, upon which we will place our text widgets.
@@ -161,7 +161,10 @@ mod feature {
                                     ids.col_code_title,
                                     widget::Canvas::new().length(36.0).color(color::BLUE),
                                 ),
-                                (ids.col_code_main, widget::Canvas::new().color(color::WHITE)),
+                                (
+                                    ids.col_code_main,
+                                    widget::Canvas::new().color(color::LIGHT_CHARCOAL),
+                                ),
                             ]),
                         ),
                         (
@@ -250,15 +253,23 @@ mod feature {
             "}".to_string(),
         ];
 
+        // Create a list to show the code
         let (mut items, scrollbar) = widget::List::flow_down(code_lines.len())
             .scrollbar_on_top()
+            .item_size(20.0)
             .middle_of(ids.col_code_main)
             .padded_wh_of(ids.col_code_main, 10.0)
             .set(ids.list_code, ui);
 
         while let Some(item) = items.next(ui) {
             let i = item.i;
-            item.set(widget::Text::new(&code_lines[i]).font_size(24), ui);
+            item.set(
+                widget::Text::new(&code_lines[i])
+                    .font_id(fonts.mono)
+                    .font_size(16)
+                    .color(color::WHITE),
+                ui,
+            );
         }
 
         if let Some(sbar) = scrollbar {
