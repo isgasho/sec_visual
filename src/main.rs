@@ -12,6 +12,7 @@ mod feature {
     use conrod::Labelable;
     use conrod::Borderable;
     use conrod::backend::glium::glium::Surface;
+    use conrod::{color, widget, Colorable, Positionable, Sizeable, Widget};
     use gui;
 
     struct Fonts {
@@ -142,8 +143,6 @@ mod feature {
     }
 
     fn set_ui(ref mut ui: conrod::UiCell, ids: &Ids, fonts: &Fonts) {
-        use conrod::{color, widget, Colorable, Positionable, Sizeable, Widget};
-
         // Our `Canvas` tree, upon which we will place our text widgets.
         widget::Canvas::new()
             .flow_down(&[
@@ -161,10 +160,7 @@ mod feature {
                                     ids.col_code_title,
                                     widget::Canvas::new().length(36.0).color(color::BLUE),
                                 ),
-                                (
-                                    ids.col_code_main,
-                                    widget::Canvas::new().color(color::LIGHT_CHARCOAL),
-                                ),
+                                (ids.col_code_main, widget::Canvas::new().color(color::WHITE)),
                             ]),
                         ),
                         (
@@ -207,7 +203,7 @@ mod feature {
                                     ids.col_reg_bottom,
                                     widget::Canvas::new()
                                         .length_weight(50.0)
-                                        .color(color::LIGHT_BLUE),
+                                        .color(color::LIGHT_YELLOW),
                                 ),
                             ]),
                         ),
@@ -231,89 +227,160 @@ mod feature {
             println!("Run until end");
         }
 
-        fn title(txt: widget::Text, parent_id: widget::Id) -> widget::Text {
-            txt.color(color::WHITE)
-                .center_justify()
-                .font_size(20)
-                .middle_of(parent_id)
-        };
-
-        title(widget::Text::new("Code"), ids.col_code_title).set(ids.label_code, ui);
-        title(widget::Text::new("Stack"), ids.col_stack_title).set(ids.label_stack, ui);
-        title(widget::Text::new("Mem"), ids.col_mem_title).set(ids.label_mem, ui);
-        title(widget::Text::new("Registers"), ids.col_reg_title).set(ids.label_reg, ui);
-
-        let code_lines = [
-            "if let Some(primitives) = ui.draw_if_changed() {".to_string(),
-            "    renderer.fill(&display, primitives, &image_map);".to_string(),
-            "    let mut target = display.draw();".to_string(),
-            "    target.clear_color(0.0, 0.0, 0.0, 1.0);".to_string(),
-            "    renderer.draw(&display, &mut target, &image_map).unwrap();".to_string(),
-            "    target.finish().unwrap();".to_string(),
-            "}".to_string(),
+        let code_lines = vec![
+            Line::Code(String::from(
+                "if let Some(primitives) = ui.draw_if_changed() {",
+            )),
+            Line::Code(String::from(
+                "    renderer.fill(&display, primitives, &image_map);",
+            )),
+            Line::Code(String::from("    let mut target = display.draw();")),
+            Line::Code(String::from("    target.clear_color(0.0, 0.0, 0.0, 1.0);")),
+            Line::Code(String::from(
+                "    renderer.draw(&display, &mut target, &image_map).unwrap();",
+            )),
+            Line::Code(String::from("    target.finish().unwrap();")),
+            Line::Code(String::from("}")),
         ];
 
-        // Create a list to show the code
-        let (mut items, scrollbar) = widget::List::flow_down(code_lines.len())
+        set_panel(
+            ui,
+            ids.col_code_title,
+            ids.label_code,
+            "Code",
+            ids.col_code_main,
+            ids.list_code,
+            &code_lines,
+            fonts,
+            |i, line| {
+                if let &Line::Code(ref s) = line {
+                    (format!("{:<4}{}", i, s), color::LIGHT_GREEN)
+                } else {
+                    panic!("Expect code");
+                }
+            },
+        );
+
+        let mems = vec![
+            Line::Mem(1023),
+            Line::Mem(1024),
+            Line::Mem(1025),
+            Line::Mem(1026),
+            Line::Mem(1027),
+            Line::Mem(1028),
+            Line::Mem(1029),
+        ];
+
+        set_panel(
+            ui,
+            ids.col_mem_title,
+            ids.label_mem,
+            "Memory",
+            ids.col_mem_main,
+            ids.list_mem,
+            &mems,
+            fonts,
+            |i, line| {
+                if let &Line::Mem(c) = line {
+                    (format!("{:<4}| {:0>8x}", i, c), color::WHITE)
+                } else {
+                    panic!("Expect mem");
+                }
+            },
+        );
+
+        set_panel(
+            ui,
+            ids.col_stack_title,
+            ids.label_stack,
+            "Stack",
+            ids.col_stack_main,
+            ids.list_stack,
+            &mems,
+            fonts,
+            |i, line| {
+                if let &Line::Mem(c) = line {
+                    (format!("{:<4}| {:0>8x}", 511 - i, c), color::GREY)
+                } else {
+                    panic!("Expect mem");
+                }
+            },
+        );
+
+       let regs = vec![
+            Line::Reg("EAX", 0),
+            Line::Reg("EBX", 0),
+            Line::Reg("ECX", 0),
+            Line::Reg("EDX", 0),
+            Line::Reg("ESI", 0),
+            Line::Reg("EDI", 0),
+            Line::Reg("EBP", 0),
+            Line::Reg("ESP", 0),
+        ];
+        
+        set_panel(
+            ui,
+            ids.col_reg_title,
+            ids.label_reg,
+            "Registers",
+            ids.col_reg_top,
+            ids.list_reg,
+            &regs,
+            fonts,
+            |_i, line| {
+                if let &Line::Reg(name, val) = line {
+                    (format!("{:<4}| {:0>8x}", name, val), color::WHITE)
+                } else {
+                    panic!("Expect reg");
+                }
+            },
+        );
+        
+    }
+
+    enum Line {
+        Code(String),
+        Mem(i32),
+        Reg(&'static str, i32),
+    }
+
+    // setup the panel
+    fn set_panel<F>(
+        ui: &mut conrod::UiCell,
+        canvas_title: widget::Id,
+        id_title: widget::Id,
+        title: &str,
+        canvas_main: widget::Id,
+        id_main: widget::Id,
+        data: &Vec<Line>,
+        fonts: &Fonts,
+        fmt: F,
+    ) where
+        F: Fn(usize, &Line) -> (String, conrod::Color),
+    {
+        widget::Text::new(title)
+            .center_justify()
+            .font_size(20)
+            .middle_of(canvas_title)
+            .color(color::WHITE)
+            .set(id_title, ui);
+
+        let (mut items, scrollbar) = widget::List::flow_down(data.len())
             .scrollbar_on_top()
             .item_size(20.0)
-            .middle_of(ids.col_code_main)
-            .padded_wh_of(ids.col_code_main, 10.0)
-            .set(ids.list_code, ui);
+            .middle_of(canvas_main)
+            .padded_wh_of(canvas_main, 2.0)
+            .set(id_main, ui);
 
         while let Some(item) = items.next(ui) {
             let i = item.i;
+            let (content, color) = fmt(i, &data[i]);
             item.set(
-                widget::Text::new(&code_lines[i])
-                    .font_id(fonts.mono)
-                    .font_size(16)
-                    .color(color::WHITE),
-                ui,
-            );
-        }
-
-        if let Some(sbar) = scrollbar {
-            sbar.set(ui);
-        }
-
-        let (mut items, scrollbar) = widget::List::flow_down(512)
-            .scrollbar_on_top()
-            .item_size(20.0)
-            .middle_of(ids.col_mem_main)
-            .padded_wh_of(ids.col_mem_main, 10.0)
-            .set(ids.list_mem, ui);
-
-        while let Some(item) = items.next(ui) {
-            let i = item.i;
-            item.set(
-                widget::TextBox::new(&format!("{:<6} 0000_0000", i))
+                widget::TextBox::new(&content)
                     .font_id(fonts.mono)
                     .font_size(16)
                     .border(0.0)
-                    .color(color::WHITE),
-                ui,
-            );
-        }
-
-        if let Some(sbar) = scrollbar {
-            sbar.set(ui);
-        }
-
-        let (mut items, scrollbar) = widget::List::flow_down(512)
-            .scrollbar_on_top()
-            .item_size(20.0)
-            .middle_of(ids.col_stack_main)
-            .padded_wh_of(ids.col_stack_main, 10.0)
-            .set(ids.list_stack, ui);
-
-        while let Some(item) = items.next(ui) {
-            let i = item.i;
-            item.set(
-                widget::TextBox::new(&format!("{:<6} 0000_0000", i))
-                    .font_id(fonts.mono)
-                    .font_size(16)
-                    .border(0.0)
-                    .color(color::WHITE),
+                    .color(color),
                 ui,
             );
         }
@@ -322,5 +389,4 @@ mod feature {
             sbar.set(ui);
         }
     }
-
 }
