@@ -1,6 +1,93 @@
 use unicorn;
 use unicorn::{Cpu, CpuX86, RegisterX86};
 
+
+pub struct X86Reg32 {
+    eax: u32, 
+    ebx: u32, 
+    ecx: u32,
+    edx: u32,
+    esi: u32,
+    edi: u32,
+    ebp: u32,
+    esp: u32, 
+    eip: u32, 
+    eflags: u32,
+}
+
+impl X86Reg32 {
+    pub fn new() ->X86Reg32 {
+        X86Reg32{
+            eax: 0,
+            ebx: 0,
+            ecx: 0,
+            edx: 0,
+            esi: 0,
+            edi: 0,
+            ebp: 0,
+            esp: 0,
+            eip: 0,
+            eflags: 0,
+        }
+    }
+    // add code here
+    pub fn read_from(&mut self, emu: &unicorn::CpuX86) {
+        self.eax = emu.reg_read_i32(RegisterX86::EAX).unwrap() as u32;
+        self.ebx = emu.reg_read_i32(RegisterX86::EBX).unwrap() as u32;
+        self.ecx = emu.reg_read_i32(RegisterX86::ECX).unwrap() as u32;
+        self.edx = emu.reg_read_i32(RegisterX86::EDX).unwrap() as u32;
+        self.esi = emu.reg_read_i32(RegisterX86::ESI).unwrap() as u32;
+        self.edi = emu.reg_read_i32(RegisterX86::EDI).unwrap() as u32;
+        self.ebp = emu.reg_read_i32(RegisterX86::EBP).unwrap() as u32;
+        self.esp = emu.reg_read_i32(RegisterX86::ESP).unwrap() as u32;
+        self.eip = emu.reg_read_i32(RegisterX86::EIP).unwrap() as u32;
+        self.eflags = emu.reg_read_i32(RegisterX86::EFLAGS).unwrap() as u32;
+    }
+}
+
+pub struct Mem32 {
+    words:[i32;512], // currently we support 1KB of memory, keep your examples simple
+}
+
+impl Mem32 {
+    pub fn new() -> Mem32{
+        Mem32{
+            words:[0;512],
+        }
+    }
+
+    // update the memory
+    pub fn update (&mut self, addr: u64, size: usize, value: i64) {
+        
+    }
+}
+
+pub struct Ins {
+    dis: String, //Disassembly of the instruction
+    bytes: Vec<u8>,
+}
+
+// This structure contains all the information about the current exploit to visualize
+pub struct Exploit {
+    emu: unicorn::CpuX86,
+    ins: Vec<Ins>,
+    cur_ins: usize,
+    regs: X86Reg32,
+    mem: Mem32,
+}
+
+impl Exploit {
+    pub fn new()->Exploit {
+        Exploit{
+            emu: CpuX86::new(unicorn::Mode::MODE_32).unwrap(),
+            ins: vec![],
+            cur_ins: 0,
+            regs: X86Reg32::new(),
+            mem: Mem32::new(),
+        }
+    }
+}
+
 pub fn emu_one() {
     // inc ecx;
     // dec edx;
@@ -22,7 +109,7 @@ pub fn emu_one() {
     let _ = emu.reg_write_i32(RegisterX86::ECX, -10);
     let _ = emu.reg_write_i32(RegisterX86::EDX, -10);
     let _ = emu.reg_write_i32(RegisterX86::EBP, 0x3000);
-
+    
     // Note that the value is invalid for memory read
     let callback = |_: &unicorn::Unicorn,
                     mem_type: unicorn::MemType,
