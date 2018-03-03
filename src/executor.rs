@@ -63,28 +63,37 @@ impl Mem32 {
 }
 
 pub struct Ins {
-    dis: String, //Disassembly of the instruction
-    bytes: Vec<u8>,
+    pub dis: String, //Disassembly of the instruction
+    pub bytes: Vec<u8>,
 }
 
 // This structure contains all the information about the current exploit to visualize
 pub struct Exploit {
     emu: unicorn::CpuX86,
-    ins: Vec<Ins>,
-    cur_ins: usize,
-    regs: X86Reg32,
-    mem: Mem32,
+    pub ins: Vec<Ins>,
+    pub cur_ins: usize,
+    pub regs: X86Reg32,
+    pub mem: Mem32,
 }
 
 impl Exploit {
     pub fn new()->Exploit {
-        Exploit{
+        let mut exp = Exploit{
             emu: CpuX86::new(unicorn::Mode::MODE_32).unwrap(),
             ins: vec![],
             cur_ins: 0,
             regs: X86Reg32::new(),
             mem: Mem32::new(),
-        }
+        };
+
+        exp.ins.push(Ins{dis: String::from("inc ecx"), bytes: vec![]});
+        exp.ins.push(Ins{dis: String::from("dec ecx"), bytes: vec![]});
+        exp.ins.push(Ins{dis: String::from("mov (ebp), eax"), bytes: vec![]});
+        exp.ins.push(Ins{dis: String::from("mov 0xdeadbeef, eax"), bytes: vec![]});
+        exp.ins.push(Ins{dis: String::from("mov eax, [0x2000]"), bytes: vec![]});
+        exp.ins.push(Ins{dis: String::from("mov [0x3000], eax"), bytes: vec![]});
+        
+        exp
     }
 }
 

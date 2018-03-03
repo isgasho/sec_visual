@@ -21,6 +21,7 @@ use conrod::Borderable;
 use conrod::backend::glium::glium::Surface;
 use conrod::{color, widget, Colorable, Positionable, Sizeable, Widget};
 use gui;
+use executor;
 
 /// In most of the examples the `glutin` crate is used for providing the window context and
 /// events while the `glium` crate is used for displaying `conrod::render::Primitives` to the
@@ -88,7 +89,7 @@ struct Fonts {
     mono: conrod::text::font::Id,
 }
 
-pub fn main() {
+pub fn main(exp: &mut executor::Exploit) {
     const WIDTH: u32 = 1280;
     const HEIGHT: u32 = 800;
 
@@ -162,7 +163,7 @@ pub fn main() {
             }
         }
 
-        set_ui(ui.set_widgets(), &ids, &fonts);
+        set_ui(&mut ui.set_widgets(), &ids, &fonts, exp);
 
         // Render the `Ui` and then display it on the screen.
         if let Some(primitives) = ui.draw_if_changed() {
@@ -209,7 +210,7 @@ widget_ids!{
     }
 }
 
-fn set_ui(ref mut ui: conrod::UiCell, ids: &Ids, fonts: &Fonts) {
+fn set_ui(ui: &mut conrod::UiCell, ids: &Ids, fonts: &Fonts, exp: &mut executor::Exploit) {
     // Our `Canvas` tree, upon which we will place our text widgets.
     widget::Canvas::new()
         .flow_down(&[
@@ -294,22 +295,6 @@ fn set_ui(ref mut ui: conrod::UiCell, ids: &Ids, fonts: &Fonts) {
         println!("Run until end");
     }
 
-    let code_lines = vec![
-        Line::Code(String::from(
-            "if let Some(primitives) = ui.draw_if_changed() {",
-        )),
-        Line::Code(String::from(
-            "    renderer.fill(&display, primitives, &image_map);",
-        )),
-        Line::Code(String::from("    let mut target = display.draw();")),
-        Line::Code(String::from("    target.clear_color(0.0, 0.0, 0.0, 1.0);")),
-        Line::Code(String::from(
-            "    renderer.draw(&display, &mut target, &image_map).unwrap();",
-        )),
-        Line::Code(String::from("    target.finish().unwrap();")),
-        Line::Code(String::from("}")),
-    ];
-
     set_panel(
         ui,
         ids.col_code_title,
@@ -317,14 +302,10 @@ fn set_ui(ref mut ui: conrod::UiCell, ids: &Ids, fonts: &Fonts) {
         "Code",
         ids.col_code_main,
         ids.list_code,
-        &code_lines,
+        &exp.ins,
         fonts,
-        |i, line| {
-            if let &Line::Code(ref s) = line {
-                (format!("{:<4}{}", i, s), color::LIGHT_GREEN)
-            } else {
-                panic!("Expect code");
-            }
+        |i, ins| {
+            (format!("{:<4}{}", i, ins.dis), color::LIGHT_GREEN)
         },
     );
 
@@ -338,6 +319,7 @@ fn set_ui(ref mut ui: conrod::UiCell, ids: &Ids, fonts: &Fonts) {
         Line::Mem(1029),
     ];
 
+/*
     set_panel(
         ui,
         ids.col_mem_title,
@@ -401,7 +383,7 @@ fn set_ui(ref mut ui: conrod::UiCell, ids: &Ids, fonts: &Fonts) {
                 panic!("Expect reg");
             }
         },
-    );
+    );*/
 }
 
 enum Line {
@@ -411,18 +393,18 @@ enum Line {
 }
 
 // setup the panel
-fn set_panel<F>(
+fn set_panel<T, F>(
     ui: &mut conrod::UiCell,
     canvas_title: widget::Id,
     id_title: widget::Id,
     title: &str,
     canvas_main: widget::Id,
     id_main: widget::Id,
-    data: &Vec<Line>,
+    data: &Vec<T>,
     fonts: &Fonts,
     fmt: F,
 ) where
-    F: Fn(usize, &Line) -> (String, conrod::Color),
+    F: Fn(usize, &T) -> (String, conrod::Color),
 {
     widget::Text::new(title)
         .center_justify()

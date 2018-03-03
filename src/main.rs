@@ -5,7 +5,8 @@ mod gui;
 mod executor;
 
 fn main() {
-    let exp = executor::Exploit::new();
-    executor::emu_one();
-    gui::main();
+    let mut exp = Box::new(executor::Exploit::new());
+
+    //executor::emu_one();
+    gui::main(&mut exp);
 }
