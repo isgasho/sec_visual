@@ -302,24 +302,12 @@ fn set_ui(ui: &mut conrod::UiCell, ids: &Ids, fonts: &Fonts, exp: &mut executor:
         "Code",
         ids.col_code_main,
         ids.list_code,
-        &exp.ins,
+        exp.ins.len(),
         fonts,
-        |i, ins| {
-            (format!("{:<4}{}", i, ins.dis), color::LIGHT_GREEN)
-        },
+        |i| (format!("{:<4}{}", i, exp.ins[i].dis), color::LIGHT_GREEN),
     );
 
-    let mems = vec![
-        Line::Mem(1023),
-        Line::Mem(1024),
-        Line::Mem(1025),
-        Line::Mem(1026),
-        Line::Mem(1027),
-        Line::Mem(1028),
-        Line::Mem(1029),
-    ];
-
-/*
+    /*
     set_panel(
         ui,
         ids.col_mem_title,
@@ -356,16 +344,7 @@ fn set_ui(ui: &mut conrod::UiCell, ids: &Ids, fonts: &Fonts, exp: &mut executor:
         },
     );
 
-    let regs = vec![
-        Line::Reg("EAX", 0),
-        Line::Reg("EBX", 0),
-        Line::Reg("ECX", 0),
-        Line::Reg("EDX", 0),
-        Line::Reg("ESI", 0),
-        Line::Reg("EDI", 0),
-        Line::Reg("EBP", 0),
-        Line::Reg("ESP", 0),
-    ];
+*/
 
     set_panel(
         ui,
@@ -374,37 +353,30 @@ fn set_ui(ui: &mut conrod::UiCell, ids: &Ids, fonts: &Fonts, exp: &mut executor:
         "Registers",
         ids.col_reg_top,
         ids.list_reg,
-        &regs,
+        exp.regs.len(),
         fonts,
-        |_i, line| {
-            if let &Line::Reg(name, val) = line {
-                (format!("{:<4}| {:0>8x}", name, val), color::WHITE)
-            } else {
-                panic!("Expect reg");
-            }
+        |i| {
+            (
+                format!("{:<6}| {:0>8x}", exp.regs.to_string(i), exp.regs[i]),
+                color::WHITE,
+            )
         },
-    );*/
+    );
 }
 
-enum Line {
-    Code(String),
-    Mem(i32),
-    Reg(&'static str, i32),
-}
-
-// setup the panel
-fn set_panel<T, F>(
+// setup the panel. The caller should use closure to pass the context.
+fn set_panel<F>(
     ui: &mut conrod::UiCell,
     canvas_title: widget::Id,
     id_title: widget::Id,
     title: &str,
     canvas_main: widget::Id,
     id_main: widget::Id,
-    data: &Vec<T>,
+    len: usize,
     fonts: &Fonts,
     fmt: F,
 ) where
-    F: Fn(usize, &T) -> (String, conrod::Color),
+    F: Fn(usize) -> (String, conrod::Color),
 {
     widget::Text::new(title)
         .center_justify()
@@ -413,7 +385,7 @@ fn set_panel<T, F>(
         .color(color::WHITE)
         .set(id_title, ui);
 
-    let (mut items, scrollbar) = widget::List::flow_down(data.len())
+    let (mut items, scrollbar) = widget::List::flow_down(len)
         .scrollbar_on_top()
         .item_size(22.0)
         .middle_of(canvas_main)
@@ -422,7 +394,7 @@ fn set_panel<T, F>(
 
     while let Some(item) = items.next(ui) {
         let i = item.i;
-        let (content, color) = fmt(i, &data[i]);
+        let (content, color) = fmt(i);
         item.set(
             widget::TextBox::new(&content)
                 .font_id(fonts.mono)
