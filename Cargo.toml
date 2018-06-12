@@ -4,6 +4,6 @@ version = "0.1.0"
 authors = ["Zhi Wang <zwang@cs.fsu.edu>"]
 
 [dependencies]
-conrod = {version = "0.58.0", features = ["glium", "winit"]}
-rand = "0.4.2"
-unicorn = "0.8.0"
+conrod = {version = "0.60", features = ["glium", "winit"]}
+rand = "0.5"
+unicorn = "0.8"
